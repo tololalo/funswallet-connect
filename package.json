@@ -1,0 +1,71 @@
+{
+  "name": "@funswallet/connect",
+  "version": "0.1.0",
+  "description": "One-line FunS Wallet connection for any dApp — WalletConnect v2 with automatic mobile deep-link and desktop QR.",
+  "license": "MIT",
+  "homepage": "https://funswallet.world",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tololalo/funswallet-connect"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/funs-connect.global.js",
+  "jsdelivr": "./dist/funs-connect.global.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./wagmi": {
+      "types": "./dist/wagmi.d.ts",
+      "import": "./dist/wagmi.js",
+      "require": "./dist/wagmi.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "funswallet",
+    "walletconnect",
+    "web3",
+    "ethereum",
+    "bsc",
+    "bnb",
+    "wallet",
+    "eip-1193",
+    "dapp"
+  ],
+  "dependencies": {
+    "@walletconnect/ethereum-provider": "^2.17.2",
+    "@walletconnect/modal": "^2.7.0"
+  },
+  "peerDependencies": {
+    "@wagmi/core": ">=2",
+    "viem": ">=2"
+  },
+  "peerDependenciesMeta": {
+    "@wagmi/core": {
+      "optional": true
+    },
+    "viem": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@wagmi/core": "^2.16.4",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "viem": "^2.21.54"
+  }
+}
