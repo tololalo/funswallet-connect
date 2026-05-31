@@ -39,6 +39,10 @@ export function funsWallet(
   parameters: FunsWalletParameters = {},
 ): CreateConnectorFn {
   let walletProvider: FunsProvider | undefined;
+  // Single-flight guard: two overlapping connect()/getProvider() calls must
+  // not each create a provider (that would leave listeners attached to an
+  // orphaned instance). Memoize the in-flight creation promise.
+  let providerPromise: Promise<FunsProvider> | undefined;
 
   let accountsChanged: ((accounts: string[]) => void) | undefined;
   let chainChanged: ((chainId: string | number) => void) | undefined;
@@ -46,10 +50,18 @@ export function funsWallet(
 
   return createConnector((config) => {
     async function getProvider(): Promise<FunsProvider> {
-      if (!walletProvider) {
-        walletProvider = await createFunsProvider(parameters);
+      if (walletProvider) return walletProvider;
+      if (!providerPromise) {
+        providerPromise = createFunsProvider(parameters).then((p) => {
+          walletProvider = p;
+          return p;
+        });
+        // If creation fails, clear the cached promise so a later call retries.
+        providerPromise.catch(() => {
+          providerPromise = undefined;
+        });
       }
-      return walletProvider;
+      return providerPromise;
     }
 
     function onAccountsChanged(accounts: string[]): void {
@@ -142,10 +154,20 @@ export function funsWallet(
 
           let currentChainId = provider.chainId;
           if (parameters.chainId && currentChainId !== parameters.chainId) {
-            const chain = await switchChain({
-              chainId: parameters.chainId,
-            }).catch(() => undefined);
-            currentChainId = chain?.id ?? currentChainId;
+            // Attempt to land on the requested chain. Re-throw a user
+            // rejection so the dApp learns the connect didn't reach the
+            // target chain; only swallow benign "chain not added / not
+            // supported by wallet" cases and stay on the current chain.
+            try {
+              const chain = await switchChain({ chainId: parameters.chainId });
+              currentChainId = chain.id;
+            } catch (switchError) {
+              const m = (switchError as Error)?.message ?? '';
+              if (/user rejected|user disapproved|reject/i.test(m)) {
+                throw new UserRejectedRequestError(switchError as Error);
+              }
+              // else: keep currentChainId (wallet stays on its current chain)
+            }
           }
 
           return { accounts, chainId: currentChainId } as unknown as {
