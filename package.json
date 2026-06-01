@@ -6,7 +6,7 @@
   "homepage": "https://funswallet.world",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tololalo/funswallet-connect"
+    "url": "git+https://github.com/tololalo/funswallet-connect.git"
   },
   "type": "module",
   "publishConfig": {
