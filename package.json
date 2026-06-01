@@ -9,6 +9,9 @@
     "url": "https://github.com/tololalo/funswallet-connect"
   },
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
