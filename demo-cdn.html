@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FunS Connect — live demo</title>
+    <style>
+      :root {
+        --orange: #ff6b35;
+        --bg: #070a12;
+        --card: #0f1422;
+        --muted: #9aa4b2;
+        --line: #1d2433;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: #fff;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        padding: 32px 16px;
+      }
+      .wrap {
+        width: 100%;
+        max-width: 460px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 20px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 14px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        padding: 11px;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: #0a0e1a;
+        color: #fff;
+        font-size: 13px;
+      }
+      button {
+        appearance: none;
+        border: none;
+        border-radius: 11px;
+        background: var(--orange);
+        color: #fff;
+        font-weight: 600;
+        font-size: 15px;
+        padding: 12px 18px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 12px;
+      }
+      button.secondary {
+        background: #1b2233;
+        color: #dbe2ee;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 13px;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .row:last-child {
+        border-bottom: none;
+      }
+      .row .k {
+        color: var(--muted);
+      }
+      .row .v {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        word-break: break-all;
+        text-align: right;
+      }
+      #log {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: #9aa4b2;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 180px;
+        overflow-y: auto;
+      }
+      .hidden {
+        display: none;
+      }
+      a {
+        color: var(--orange);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>FunS Connect — live demo</h1>
+      <div class="sub">
+        Loads <code>@funswallet/connect</code> from a CDN. Enter a WalletConnect
+        projectId (or leave blank to use the shared demo id) and connect.
+      </div>
+
+      <div class="card">
+        <label for="pid">WalletConnect projectId (optional)</label>
+        <input id="pid" placeholder="from dashboard.reown.com" />
+        <button id="connect">Connect FunS Wallet</button>
+      </div>
+
+      <div id="state" class="card hidden">
+        <div class="row">
+          <span class="k">Address</span><span class="v" id="addr">—</span>
+        </div>
+        <div class="row">
+          <span class="k">Chain ID</span><span class="v" id="chain">—</span>
+        </div>
+        <button id="sign" class="secondary">Sign test message</button>
+        <button id="disconnect" class="secondary">Disconnect</button>
+      </div>
+
+      <div class="card">
+        <label>Log</label>
+        <div id="log">ready.</div>
+      </div>
+
+      <div class="sub">
+        Docs:
+        <a
+          href="https://www.npmjs.com/package/@funswallet/connect"
+          target="_blank"
+          >npm</a
+        >
+        · Mobile: opens the FunS Wallet app · Desktop: shows a QR.
+      </div>
+    </div>
+
+    <script type="module">
+      import { connectFunsWallet } from "https://esm.sh/@funswallet/connect";
+
+      const $ = (id) => document.getElementById(id);
+      const log = (m) => {
+        $("log").textContent =
+          `[${new Date().toLocaleTimeString()}] ${m}\n` + $("log").textContent;
+      };
+
+      let provider = null;
+
+      $("connect").addEventListener("click", async () => {
+        $("connect").disabled = true;
+        log("connecting… (approve in the FunS Wallet app or scan the QR)");
+        try {
+          const projectId = $("pid").value.trim() || undefined;
+          provider = await connectFunsWallet({ projectId });
+          const accounts = await provider.request({
+            method: "eth_requestAccounts",
+          });
+          $("addr").textContent = accounts[0] || "(none)";
+          $("chain").textContent = provider.chainId ?? "—";
+          $("state").classList.remove("hidden");
+          log("connected: " + accounts[0]);
+
+          provider.on("accountsChanged", (a) => {
+            $("addr").textContent = a[0] || "(none)";
+            log("accountsChanged: " + (a[0] || "(none)"));
+          });
+          provider.on("chainChanged", (c) => {
+            $("chain").textContent = Number(c);
+            log("chainChanged: " + c);
+          });
+          provider.on("disconnect", () => {
+            $("state").classList.add("hidden");
+            log("disconnected");
+          });
+        } catch (e) {
+          log("error: " + (e && e.message ? e.message : String(e)));
+        } finally {
+          $("connect").disabled = false;
+        }
+      });
+
+      $("sign").addEventListener("click", async () => {
+        if (!provider) return;
+        try {
+          const [addr] = provider.accounts;
+          const msg =
+            "0x" +
+            Array.from("Hello from FunS Connect demo")
+              .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+              .join("");
+          log("requesting personal_sign…");
+          const sig = await provider.request({
+            method: "personal_sign",
+            params: [msg, addr],
+          });
+          log("signature: " + sig);
+        } catch (e) {
+          log("sign error: " + (e && e.message ? e.message : String(e)));
+        }
+      });
+
+      $("disconnect").addEventListener("click", async () => {
+        if (!provider) return;
+        try {
+          await provider.disconnect();
+        } catch {}
+        $("state").classList.add("hidden");
+        log("disconnected");
+      });
+    </script>
+  </body>
+</html>
