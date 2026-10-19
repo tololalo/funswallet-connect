@@ -24,7 +24,7 @@
 ## 매 배포 — 명령
 
 ```bash
-cd ~/funswallet/funswallet-connect
+cd <이 리포를 클론한 폴더>
 
 # 1. 로그인 (브라우저로 인증창 열림)
 npm login
